@@ -1,0 +1,178 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Đặt giờ y lệnh</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 10px;
+      background: #f9f9f9;
+    }
+    h2 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+    .legend, .reset-btn {
+      max-width: 500px;
+      margin: 10px auto;
+      text-align: center;
+    }
+    .legend span {
+      display: inline-block;
+      margin: 2px 4px;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    .reset-btn {
+      padding: 12px 20px;
+      font-size: 16px;
+      background-color: #555;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    td {
+      padding: 10px 4px;
+      border: 1px solid #ccc;
+      text-align: center;
+      font-size: 14px;
+      border-radius: 6px;
+      position: relative;
+      min-width: 50px;
+    }
+    .picked {
+      background-color: #e74c3c;
+      color: white;
+    }
+    .available {
+      background-color: #2ecc71;
+      color: white;
+      cursor: pointer;
+    }
+    .added {
+      background-color: #3498db;
+      color: white;
+    }
+    .add-btn {
+      position: absolute;
+      top: 2px;
+      right: 2px;
+      background: white;
+      color: black;
+      border: 1px solid #ccc;
+      border-radius: 50%;
+      width: 18px;
+      height: 18px;
+      font-size: 12px;
+      line-height: 16px;
+      cursor: pointer;
+    }
+    .del-btn {
+      display: inline-block;
+      margin-top: 4px;
+      font-size: 10px;
+      background: #fff;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      padding: 2px 4px;
+      color: #000;
+    }
+    @media (max-width: 600px) {
+      td { font-size: 12px; padding: 8px 2px; }
+      .reset-btn { font-size: 14px; padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <h2>Đặt giờ y lệnh</h2>
+  <table id="timeTable"></table>
+  <div class="legend">
+    <span style="background:#e74c3c;color:white;">Giờ đã chọn</span>
+    <span style="background:#2ecc71;color:white;">Giờ chưa chọn</span>
+    <span style="background:#3498db;color:white;">Giờ thêm</span>
+  </div>
+  <div class="legend">
+    <button class="reset-btn" onclick="resetTable()">Làm mới bảng giờ</button>
+  </div>
+
+  <script>
+    const added = new Set();
+
+    function generateTable() {
+      const table = document.getElementById("timeTable");
+      table.innerHTML = "";
+      let row;
+
+      for (let h = 0; h < 24; h++) {
+        for (let m = 0; m < 60; m += 6) {
+          if (m % 36 === 0) {
+            row = document.createElement("tr");
+            table.appendChild(row);
+          }
+          const hour = String(h).padStart(2, '0');
+          const min = String(m).padStart(2, '0');
+          const time = `${hour}:${min}`;
+
+          const td = document.createElement("td");
+          td.className = "available";
+          td.id = `slot-${time}`;
+          td.innerHTML = `${time}<button class='add-btn' onclick='event.stopPropagation(); addNeighbor("${time}", this.parentNode);'>+</button>`;
+          td.onclick = function () {
+            this.classList.toggle("picked");
+            this.classList.toggle("available");
+          };
+          row.appendChild(td);
+        }
+      }
+    }
+
+    function addNeighbor(base, parentTd) {
+      const [h, m] = base.split(":").map(Number);
+      const baseMinutes = h * 60 + m;
+
+      for (let offset = 1; offset <= 2; offset++) {
+        const newMinutes = baseMinutes + offset;
+        const nh = String(Math.floor(newMinutes / 60)).padStart(2, '0');
+        const nm = String(newMinutes % 60).padStart(2, '0');
+        const newTime = `${nh}:${nm}`;
+        if (!document.getElementById(`slot-${newTime}`) && !added.has(newTime)) {
+          const newTd = document.createElement("td");
+          newTd.className = "added picked";
+          newTd.id = `added-${newTime}`;
+          newTd.innerHTML = `${newTime}<br><span class='del-btn' onclick='event.stopPropagation(); removeSlot("${newTime}")'>Xóa</span>`;
+          newTd.onclick = function () {
+            this.classList.toggle("picked");
+            this.classList.toggle("added");
+          };
+          parentTd.parentNode.insertBefore(newTd, parentTd.nextSibling);
+          added.add(newTime);
+          break;
+        }
+      }
+    }
+
+    function removeSlot(time) {
+      const el = document.getElementById(`added-${time}`);
+      if (el) el.remove();
+      added.delete(time);
+    }
+
+    function resetTable() {
+      added.clear();
+      generateTable();
+    }
+
+    generateTable();
+  </script>
+</body>
+</html>
